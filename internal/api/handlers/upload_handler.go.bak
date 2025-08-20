@@ -1,0 +1,312 @@
+package handlers
+
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+
+	"github.com/yourname/go-template/internal/domain/entities"
+	"github.com/yourname/go-template/internal/domain/services"
+	// "github.com/yourname/go-template/internal/pkg/storage" // Temporarily disabled to fix circular import
+)
+
+type UploadHandler struct {
+	userService    *services.UserService
+	// storageManager *storage.Manager // Temporarily disabled to fix circular import
+}
+
+func NewUploadHandler(userService *services.UserService /*, storageManager *storage.Manager*/) *UploadHandler {
+	return &UploadHandler{
+		userService:    userService,
+		// storageManager: storageManager, // Temporarily disabled to fix circular import
+	}
+}
+
+// UploadUserAvatar handles user avatar upload
+// POST /api/v1/users/:id/avatar
+func (h *UploadHandler) UploadUserAvatar(c *gin.Context) {
+	// Get user ID from URL parameters
+	userIDStr := c.Param("id")
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	// Check authorization (user can only upload their own avatar or admin can upload for anyone)
+	currentUserID := c.MustGet("user_id").(uuid.UUID)
+	currentUserRole := c.MustGet("user_role").(string)
+
+	if currentUserID != userID && currentUserRole != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Cannot upload avatar for other users"})
+		return
+	}
+
+	// Check if user exists
+	user, err := h.userService.GetByID(c.Request.Context(), userID)
+	if err != nil {
+		if err == services.ErrUserNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
+		return
+	}
+
+	// Get uploaded file
+	file, err := c.FormFile("avatar")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "No file uploaded or invalid file field name",
+			"hint":  "Use 'avatar' as the field name for the uploaded file",
+		})
+		return
+	}
+
+	// Delete old avatar if exists
+	if user.AvatarPath != nil && *user.AvatarPath != "" {
+		h.storageManager.Delete(c.Request.Context(), *user.AvatarPath)
+	}
+
+	// Upload new avatar
+	directory := fmt.Sprintf("avatars/users/%s", userID.String())
+	imageUpload, err := h.storageManager.StoreUploadedImage(c.Request.Context(), file, directory)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to upload avatar",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Update user with new avatar information
+	updateRequest := &entities.UpdateUserRequest{}
+	user.Avatar = &imageUpload.URL
+	user.AvatarPath = &imageUpload.Path
+	user.AvatarOriginal = &imageUpload.OriginalName
+
+	// Update user in database
+	updatedUser, err := h.userService.Update(c.Request.Context(), userID, updateRequest)
+	if err != nil {
+		// If database update fails, clean up uploaded file
+		h.storageManager.Delete(c.Request.Context(), imageUpload.Path)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user avatar"})
+		return
+	}
+
+	// Update the user object with avatar info (since UpdateUserRequest doesn't include avatar fields)
+	updatedUser.Avatar = &imageUpload.URL
+	updatedUser.AvatarPath = &imageUpload.Path
+	updatedUser.AvatarOriginal = &imageUpload.OriginalName
+
+	response := &entities.AvatarUploadResponse{
+		Avatar:         imageUpload.URL,
+		AvatarPath:     imageUpload.Path,
+		AvatarOriginal: imageUpload.OriginalName,
+		Message:        "Avatar uploaded successfully",
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// DeleteUserAvatar handles user avatar deletion
+// DELETE /api/v1/users/:id/avatar
+func (h *UploadHandler) DeleteUserAvatar(c *gin.Context) {
+	// Get user ID from URL parameters
+	userIDStr := c.Param("id")
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	// Check authorization
+	currentUserID := c.MustGet("user_id").(uuid.UUID)
+	currentUserRole := c.MustGet("user_role").(string)
+
+	if currentUserID != userID && currentUserRole != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Cannot delete avatar for other users"})
+		return
+	}
+
+	// Get user
+	user, err := h.userService.GetByID(c.Request.Context(), userID)
+	if err != nil {
+		if err == services.ErrUserNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
+		return
+	}
+
+	// Check if user has an avatar
+	if user.AvatarPath == nil || *user.AvatarPath == "" {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User has no avatar to delete"})
+		return
+	}
+
+	// Delete avatar file
+	if err := h.storageManager.Delete(c.Request.Context(), *user.AvatarPath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to delete avatar file",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Update user to remove avatar references
+	user.Avatar = nil
+	user.AvatarPath = nil
+	user.AvatarOriginal = nil
+
+	updateRequest := &entities.UpdateUserRequest{}
+	_, err = h.userService.Update(c.Request.Context(), userID, updateRequest)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
+		return
+	}
+
+	response := &entities.AvatarDeleteResponse{
+		Message: "Avatar deleted successfully",
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// UploadCurrentUserAvatar handles current user avatar upload (convenience endpoint)
+// POST /api/v1/auth/avatar
+func (h *UploadHandler) UploadCurrentUserAvatar(c *gin.Context) {
+	// Get current user ID from context
+	userID := c.MustGet("user_id").(uuid.UUID)
+
+	// Set the user ID in params and call the main upload function
+	c.Params = append(c.Params, gin.Param{Key: "id", Value: userID.String()})
+	h.UploadUserAvatar(c)
+}
+
+// DeleteCurrentUserAvatar handles current user avatar deletion (convenience endpoint)
+// DELETE /api/v1/auth/avatar
+func (h *UploadHandler) DeleteCurrentUserAvatar(c *gin.Context) {
+	// Get current user ID from context
+	userID := c.MustGet("user_id").(uuid.UUID)
+
+	// Set the user ID in params and call the main delete function
+	c.Params = append(c.Params, gin.Param{Key: "id", Value: userID.String()})
+	h.DeleteUserAvatar(c)
+}
+
+// GetFileInfo returns information about an uploaded file
+// GET /api/v1/files/info?path=...
+func (h *UploadHandler) GetFileInfo(c *gin.Context) {
+	path := c.Query("path")
+	if path == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File path is required"})
+		return
+	}
+
+	fileInfo, err := h.storageManager.GetFileInfo(c.Request.Context(), path)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error":   "File not found",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, fileInfo)
+}
+
+// ListFiles returns a list of files in a directory
+// GET /api/v1/files/list?directory=...
+func (h *UploadHandler) ListFiles(c *gin.Context) {
+	directory := c.DefaultQuery("directory", "")
+
+	files, err := h.storageManager.ListFiles(c.Request.Context(), directory)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to list files",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"directory": directory,
+		"files":     files,
+		"count":     len(files),
+	})
+}
+
+// UploadGenericFile handles generic file uploads
+// POST /api/v1/files/upload
+func (h *UploadHandler) UploadGenericFile(c *gin.Context) {
+	// Get directory from form or query parameter
+	directory := c.DefaultPostForm("directory", "uploads")
+
+	// Get uploaded file
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "No file uploaded or invalid file field name",
+			"hint":  "Use 'file' as the field name for the uploaded file",
+		})
+		return
+	}
+
+	// Upload file
+	uploadedFile, err := h.storageManager.StoreUploadedFile(c.Request.Context(), file, directory)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to upload file",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "File uploaded successfully",
+		"file":    uploadedFile,
+	})
+}
+
+// DeleteFile handles file deletion
+// DELETE /api/v1/files?path=...
+func (h *UploadHandler) DeleteFile(c *gin.Context) {
+	path := c.Query("path")
+	if path == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File path is required"})
+		return
+	}
+
+	// Check if file exists
+	exists, err := h.storageManager.Exists(c.Request.Context(), path)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to check file existence",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	if !exists {
+		c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
+		return
+	}
+
+	// Delete file
+	if err := h.storageManager.Delete(c.Request.Context(), path); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to delete file",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "File deleted successfully",
+		"path":    path,
+	})
+}

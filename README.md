@@ -15,6 +15,7 @@ A clean, production-ready Go REST API template following Clean Architecture prin
 - ✅ **Health Check** - Health monitoring endpoint
 - ✅ **Password Security** - bcrypt password hashing
 - ✅ **Input Validation** - Request validation and error handling
+- ✅ **API Documentation** - Swagger/OpenAPI documentation with interactive UI
 - ✅ **Docker Support** - Ready for containerization
 - ✅ **Modular Design** - Easy to extend and maintain
 
@@ -54,6 +55,7 @@ migrations/               # Database migrations
 ### Prerequisites
 - Go 1.21 or higher
 - PostgreSQL database
+- Redis server (for caching and optional features)
 - Make (optional, for convenience)
 
 ### Setup
@@ -63,20 +65,33 @@ migrations/               # Database migrations
    git clone https://github.com/VeRJiL/go-template.git
    cd go-template
    cp .env.example .env
-   # Edit .env with your database configuration
+   # Edit .env with your database and Redis configuration
    ```
 
-2. **Install dependencies**:
+2. **Install Redis** (if not already installed):
+   ```bash
+   # Ubuntu/Debian
+   sudo apt update && sudo apt install redis-server
+
+   # macOS (using Homebrew)
+   brew install redis
+
+   # Start Redis server
+   redis-server
+   # Or run in background: redis-server --daemonize yes
+   ```
+
+3. **Install dependencies**:
    ```bash
    go mod download
    ```
 
-3. **Run database migrations**:
+4. **Run database migrations**:
    ```bash
    make migrate-up
    ```
 
-4. **Build and run**:
+5. **Build and run**:
    ```bash
    make build
    make run
@@ -114,6 +129,11 @@ make docker-run     # Run with Docker Compose
 ### Health
 - `GET /health` - Health check
 
+### API Documentation
+- `GET /swagger/index.html` - Interactive Swagger UI for API documentation
+
+> 📖 **Swagger Documentation**: Once the server is running, visit `http://localhost:8080/swagger/index.html` to explore the complete API documentation with interactive testing capabilities.
+
 ## 🔧 Configuration
 
 The application uses environment variables for configuration. Key variables:
@@ -130,6 +150,11 @@ DB_PORT=5432
 DB_USER=your_user
 DB_PASSWORD=your_password
 DB_DATABASE=your_database
+
+# Redis (optional, for caching and message broker)
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_DB=0
 
 # Authentication
 JWT_SECRET=your-secret-key

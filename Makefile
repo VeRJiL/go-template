@@ -19,7 +19,7 @@ YELLOW=\033[1;33m
 BLUE=\033[0;34m
 NC=\033[0m # No Color
 
-.PHONY: help build build-linux build-windows run test clean proto swagger install-tools deps tidy fmt lint docker-build docker-run
+.PHONY: help build build-linux build-windows run test test-migration test-migration-short clean proto swagger install-tools deps tidy fmt lint docker-build docker-run
 
 # Default target
 all: build
@@ -68,6 +68,16 @@ test-coverage: ## Run tests with coverage
 benchmark: ## Run benchmarks
 	@echo "$(BLUE)Running benchmarks...$(NC)"
 	go test -bench=. -benchmem ./...
+
+test-migration: ## Run migration tests
+	@echo "$(BLUE)Running migration tests...$(NC)"
+	cd tests/migration && go test -v
+	@echo "$(GREEN)✅ Migration tests completed$(NC)"
+
+test-migration-short: ## Run migration tests in short mode
+	@echo "$(BLUE)Running migration tests (short mode)...$(NC)"
+	cd tests/migration && go test -short -v
+	@echo "$(GREEN)✅ Migration tests completed$(NC)"
 
 ##@ Code Quality
 fmt: ## Format code
@@ -203,17 +213,17 @@ docker-run: ## Run Docker container
 ##@ Database
 migrate-up: ## Run database migrations
 	@echo "$(BLUE)Running database migrations...$(NC)"
-	go run cmd/migrate/main.go up
+	./bin/migrate -path migrations/postgres -database "postgres://verjil:admin1234@localhost:5432/go_template?sslmode=disable" up
 	@echo "$(GREEN)✅ Database migrations completed$(NC)"
 
 migrate-down: ## Rollback database migrations
 	@echo "$(BLUE)Rolling back database migrations...$(NC)"
-	go run cmd/migrate/main.go down
+	./bin/migrate -path migrations/postgres -database "postgres://verjil:admin1234@localhost:5432/go_template?sslmode=disable" down
 	@echo "$(GREEN)✅ Database rollback completed$(NC)"
 
 migrate-create: ## Create new migration (usage: make migrate-create NAME=migration_name)
 	@echo "$(BLUE)Creating new migration: $(NAME)$(NC)"
-	go run cmd/migrate/main.go create $(NAME)
+	./bin/migrate create -ext sql -dir migrations/postgres -seq $(NAME)
 	@echo "$(GREEN)✅ Migration created$(NC)"
 
 ##@ Storage

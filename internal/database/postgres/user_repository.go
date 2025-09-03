@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
@@ -145,7 +146,7 @@ func (r *userRepository) Update(ctx context.Context, id uuid.UUID, updates *enti
 		UPDATE users SET %s
 		WHERE id = $%d
 		RETURNING id, email, password_hash, first_name, last_name, role, is_active, created_at, updated_at
-	`, fmt.Sprintf("%v", setParts), argIndex)
+	`, strings.Join(setParts, ", "), argIndex)
 
 	args = append(args, id)
 

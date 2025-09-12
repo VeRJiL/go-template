@@ -7,10 +7,6 @@ BINARY_UNIX=$(BINARY_NAME)_unix
 BINARY_WINDOWS=$(BINARY_NAME)_windows.exe
 MAIN_PATH=./cmd/main.go
 
-# Protobuf and gRPC variables
-PROTO_DIR=api/proto
-GENERATED_DIR=internal/grpc/gen
-THIRD_PARTY=third_party
 
 # Colors for output
 RED=\033[0;31m
@@ -19,7 +15,7 @@ YELLOW=\033[1;33m
 BLUE=\033[0;34m
 NC=\033[0m # No Color
 
-.PHONY: help build build-linux build-windows run test test-migration test-migration-short clean proto swagger install-tools deps tidy fmt lint docker-build docker-run
+.PHONY: help build build-linux build-windows run test test-migration test-migration-short clean swagger install-tools deps tidy fmt lint docker-build docker-run
 
 # Default target
 all: build
@@ -101,40 +97,10 @@ deps: ## Download dependencies
 	@echo "$(GREEN)✅ Dependencies downloaded$(NC)"
 
 ##@ Code Generation
-proto: ## Generate gRPC code from protobuf files
-	@echo "$(BLUE)Generating gRPC code...$(NC)"
-	@if [ ! -d "$(GENERATED_DIR)" ]; then mkdir -p $(GENERATED_DIR); fi
-	@find $(PROTO_DIR) -name "*.proto" -exec echo "Processing: {}" \;
-
-	# Generate Go code
-	protoc --proto_path=$(PROTO_DIR) \
-		--proto_path=$(THIRD_PARTY) \
-		--go_out=$(GENERATED_DIR) \
-		--go_opt=paths=source_relative \
-		--go-grpc_out=$(GENERATED_DIR) \
-		--go-grpc_opt=paths=source_relative \
-		$(PROTO_DIR)/user/v1/*.proto
-
-	# Generate gRPC Gateway code
-	protoc --proto_path=$(PROTO_DIR) \
-		--proto_path=$(THIRD_PARTY) \
-		--grpc-gateway_out=$(GENERATED_DIR) \
-		--grpc-gateway_opt=paths=source_relative \
-		$(PROTO_DIR)/user/v1/*.proto
-
-	@echo "$(GREEN)✅ gRPC code generation completed$(NC)"
 
 swagger: ## Generate Swagger documentation
 	@echo "$(BLUE)Generating Swagger documentation...$(NC)"
 	@if [ ! -d "docs/swagger" ]; then mkdir -p docs/swagger; fi
-
-	# Generate OpenAPI spec from protobuf
-	protoc --proto_path=$(PROTO_DIR) \
-		--proto_path=$(THIRD_PARTY) \
-		--openapiv2_out=docs/swagger \
-		--openapiv2_opt=logtostderr=true \
-		--openapiv2_opt=json_names_for_fields=false \
-		$(PROTO_DIR)/user/v1/*.proto
 
 	# Generate Swagger from Go annotations (for REST endpoints)
 	swag init -g $(MAIN_PATH) -o docs/swagger --parseDependency
@@ -144,22 +110,6 @@ swagger: ## Generate Swagger documentation
 install-tools: ## Install required development tools
 	@echo "$(BLUE)Installing development tools...$(NC)"
 
-	# Install protobuf compiler
-	@echo "Installing protobuf compiler..."
-	@if ! command -v protoc &> /dev/null; then \
-		echo "$(YELLOW)Please install protobuf compiler manually:$(NC)"; \
-		echo "  - macOS: brew install protobuf"; \
-		echo "  - Ubuntu: apt-get install protobuf-compiler"; \
-		echo "  - Or download from: https://github.com/protocolbuffers/protobuf/releases"; \
-	else \
-		echo "$(GREEN)✅ protoc already installed$(NC)"; \
-	fi
-
-	# Install Go protobuf plugins
-	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest
-	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@latest
 
 	# Install Swagger
 	go install github.com/swaggo/swag/cmd/swag@latest
@@ -176,29 +126,6 @@ install-tools: ## Install required development tools
 
 	@echo "$(GREEN)✅ All tools installed$(NC)"
 
-setup-proto-deps: ## Setup third-party protobuf dependencies
-	@echo "$(BLUE)Setting up protobuf dependencies...$(NC)"
-	@if [ ! -d "$(THIRD_PARTY)" ]; then mkdir -p $(THIRD_PARTY); fi
-
-	# Download googleapis
-	@if [ ! -d "$(THIRD_PARTY)/google" ]; then \
-		echo "Downloading googleapis..."; \
-		curl -L https://github.com/googleapis/googleapis/archive/master.zip -o /tmp/googleapis.zip; \
-		unzip -q /tmp/googleapis.zip -d /tmp/; \
-		cp -r /tmp/googleapis-master/google $(THIRD_PARTY)/; \
-		rm -rf /tmp/googleapis*; \
-	fi
-
-	# Download protoc-gen-openapiv2 options
-	@if [ ! -d "$(THIRD_PARTY)/protoc-gen-openapiv2" ]; then \
-		echo "Downloading protoc-gen-openapiv2 options..."; \
-		curl -L https://github.com/grpc-ecosystem/grpc-gateway/archive/v2.18.0.zip -o /tmp/grpc-gateway.zip; \
-		unzip -q /tmp/grpc-gateway.zip -d /tmp/; \
-		cp -r /tmp/grpc-gateway-2.18.0/protoc-gen-openapiv2 $(THIRD_PARTY)/; \
-		rm -rf /tmp/grpc-gateway*; \
-	fi
-
-	@echo "$(GREEN)✅ Protobuf dependencies setup completed$(NC)"
 
 ##@ Docker
 docker-build: ## Build Docker image

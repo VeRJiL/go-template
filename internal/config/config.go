@@ -31,6 +31,7 @@ type Config struct {
 	Localization  LocalizationConfig
 	Custom        CustomConfig
 	MessageBroker MessageBrokerConfig
+	Notification  NotificationConfig
 	ELK           ELKConfig
 	GRPC          GRPCConfig
 }
@@ -612,6 +613,168 @@ type GRPCGatewayConfig struct {
 	Prefix  string `json:"prefix" mapstructure:"prefix"`
 }
 
+// NotificationConfig holds notification system configuration
+type NotificationConfig struct {
+	Enabled       bool                      `json:"enabled" mapstructure:"enabled"`
+	DefaultDriver string                    `json:"default_driver" mapstructure:"default_driver"`
+	Email         NotificationEmailConfig  `json:"email" mapstructure:"email"`
+	SMS           NotificationSMSConfig    `json:"sms" mapstructure:"sms"`
+	Push          NotificationPushConfig   `json:"push" mapstructure:"push"`
+	Social        NotificationSocialConfig `json:"social" mapstructure:"social"`
+}
+
+// NotificationEmailConfig holds email notification configuration
+type NotificationEmailConfig struct {
+	Enabled  bool        `json:"enabled" mapstructure:"enabled"`
+	Provider string      `json:"provider" mapstructure:"provider"`
+	SMTP     *SMTPConfig `json:"smtp,omitempty" mapstructure:"smtp"`
+	SendGrid *SendGridConfig `json:"sendgrid,omitempty" mapstructure:"sendgrid"`
+	Mailgun  *MailgunConfig  `json:"mailgun,omitempty" mapstructure:"mailgun"`
+	AWSSES   *AWSSESConfig   `json:"aws_ses,omitempty" mapstructure:"aws_ses"`
+}
+
+// NotificationSMSConfig holds SMS notification configuration
+type NotificationSMSConfig struct {
+	Enabled    bool                `json:"enabled" mapstructure:"enabled"`
+	Provider   string              `json:"provider" mapstructure:"provider"`
+	Twilio     *TwilioConfig       `json:"twilio,omitempty" mapstructure:"twilio"`
+	AWSSNS     *AWSSNSConfig       `json:"aws_sns,omitempty" mapstructure:"aws_sns"`
+	Nexmo      *NexmoConfig        `json:"nexmo,omitempty" mapstructure:"nexmo"`
+	TextMagic  *TextMagicConfig    `json:"textmagic,omitempty" mapstructure:"textmagic"`
+}
+
+// NotificationPushConfig holds push notification configuration
+type NotificationPushConfig struct {
+	Enabled   bool              `json:"enabled" mapstructure:"enabled"`
+	Provider  string            `json:"provider" mapstructure:"provider"`
+	FCM       *FCMConfig        `json:"fcm,omitempty" mapstructure:"fcm"`
+	APNS      *APNSConfig       `json:"apns,omitempty" mapstructure:"apns"`
+	Pusher    *PusherConfig     `json:"pusher,omitempty" mapstructure:"pusher"`
+	OneSignal *OneSignalConfig  `json:"onesignal,omitempty" mapstructure:"onesignal"`
+}
+
+// NotificationSocialConfig holds social media notification configuration
+type NotificationSocialConfig struct {
+	Enabled  bool                      `json:"enabled" mapstructure:"enabled"`
+	WhatsApp NotificationWhatsAppConfig `json:"whatsapp" mapstructure:"whatsapp"`
+	Telegram NotificationTelegramConfig `json:"telegram" mapstructure:"telegram"`
+	Slack    NotificationSlackConfig    `json:"slack" mapstructure:"slack"`
+	Discord  NotificationDiscordConfig  `json:"discord" mapstructure:"discord"`
+}
+
+// SMS Provider Configs
+type TwilioConfig struct {
+	AccountSID     string `json:"account_sid" mapstructure:"account_sid"`
+	AuthToken      string `json:"auth_token" mapstructure:"auth_token"`
+	FromNumber     string `json:"from_number" mapstructure:"from_number"`
+	StatusCallback string `json:"status_callback" mapstructure:"status_callback"`
+	Timeout        int    `json:"timeout" mapstructure:"timeout"`
+}
+
+type AWSSNSConfig struct {
+	Region    string `json:"region" mapstructure:"region"`
+	AccessKey string `json:"access_key" mapstructure:"access_key"`
+	SecretKey string `json:"secret_key" mapstructure:"secret_key"`
+	Timeout   int    `json:"timeout" mapstructure:"timeout"`
+}
+
+type NexmoConfig struct {
+	APIKey    string `json:"api_key" mapstructure:"api_key"`
+	APISecret string `json:"api_secret" mapstructure:"api_secret"`
+	FromNumber string `json:"from_number" mapstructure:"from_number"`
+	Timeout   int    `json:"timeout" mapstructure:"timeout"`
+}
+
+type TextMagicConfig struct {
+	Username   string `json:"username" mapstructure:"username"`
+	APIKey     string `json:"api_key" mapstructure:"api_key"`
+	FromNumber string `json:"from_number" mapstructure:"from_number"`
+	Timeout    int    `json:"timeout" mapstructure:"timeout"`
+}
+
+// Push Provider Configs
+type FCMConfig struct {
+	ServerKey string `json:"server_key" mapstructure:"server_key"`
+	ProjectID string `json:"project_id" mapstructure:"project_id"`
+	Timeout   int    `json:"timeout" mapstructure:"timeout"`
+}
+
+type APNSConfig struct {
+	KeyID      string `json:"key_id" mapstructure:"key_id"`
+	TeamID     string `json:"team_id" mapstructure:"team_id"`
+	BundleID   string `json:"bundle_id" mapstructure:"bundle_id"`
+	KeyFile    string `json:"key_file" mapstructure:"key_file"`
+	Production bool   `json:"production" mapstructure:"production"`
+	Timeout    int    `json:"timeout" mapstructure:"timeout"`
+}
+
+type PusherConfig struct {
+	AppID   string `json:"app_id" mapstructure:"app_id"`
+	Key     string `json:"key" mapstructure:"key"`
+	Secret  string `json:"secret" mapstructure:"secret"`
+	Cluster string `json:"cluster" mapstructure:"cluster"`
+	Timeout int    `json:"timeout" mapstructure:"timeout"`
+}
+
+type OneSignalConfig struct {
+	AppID   string `json:"app_id" mapstructure:"app_id"`
+	APIKey  string `json:"api_key" mapstructure:"api_key"`
+	Timeout int    `json:"timeout" mapstructure:"timeout"`
+}
+
+// Social Provider Configs
+type NotificationWhatsAppConfig struct {
+	Enabled     bool                   `json:"enabled" mapstructure:"enabled"`
+	Provider    string                 `json:"provider" mapstructure:"provider"`
+	Twilio      *WhatsAppTwilioConfig  `json:"twilio,omitempty" mapstructure:"twilio"`
+	BusinessAPI *WhatsAppBusinessConfig `json:"business_api,omitempty" mapstructure:"business_api"`
+}
+
+type NotificationTelegramConfig struct {
+	Enabled  bool   `json:"enabled" mapstructure:"enabled"`
+	BotToken string `json:"bot_token" mapstructure:"bot_token"`
+	Timeout  int    `json:"timeout" mapstructure:"timeout"`
+}
+
+type NotificationSlackConfig struct {
+	Enabled    bool   `json:"enabled" mapstructure:"enabled"`
+	Provider   string `json:"provider" mapstructure:"provider"`
+	WebhookURL string `json:"webhook_url" mapstructure:"webhook_url"`
+	BotToken   string `json:"bot_token" mapstructure:"bot_token"`
+	Timeout    int    `json:"timeout" mapstructure:"timeout"`
+}
+
+type NotificationDiscordConfig struct {
+	Enabled    bool   `json:"enabled" mapstructure:"enabled"`
+	Provider   string `json:"provider" mapstructure:"provider"`
+	WebhookURL string `json:"webhook_url" mapstructure:"webhook_url"`
+	BotToken   string `json:"bot_token" mapstructure:"bot_token"`
+	Timeout    int    `json:"timeout" mapstructure:"timeout"`
+}
+
+type WhatsAppTwilioConfig struct {
+	AccountSID string `json:"account_sid" mapstructure:"account_sid"`
+	AuthToken  string `json:"auth_token" mapstructure:"auth_token"`
+	FromNumber string `json:"from_number" mapstructure:"from_number"`
+	Timeout    int    `json:"timeout" mapstructure:"timeout"`
+}
+
+type WhatsAppBusinessConfig struct {
+	AccessToken string `json:"access_token" mapstructure:"access_token"`
+	PhoneNumberID string `json:"phone_number_id" mapstructure:"phone_number_id"`
+	Timeout     int    `json:"timeout" mapstructure:"timeout"`
+}
+
+// Email provider configs (reuse existing ones, but add new ones for notification context)
+type SendGridConfig struct {
+	APIKey      string `json:"api_key" mapstructure:"api_key"`
+	FromEmail   string `json:"from_email" mapstructure:"from_email"`
+	FromName    string `json:"from_name" mapstructure:"from_name"`
+	ReplyTo     string `json:"reply_to" mapstructure:"reply_to"`
+	TemplateDir string `json:"template_dir" mapstructure:"template_dir"`
+	Timeout     int    `json:"timeout" mapstructure:"timeout"`
+}
+
 func Load() (*Config, error) {
 	if err := godotenv.Load(); err != nil {
 		fmt.Println("No .env file found, using environment variables")
@@ -920,6 +1083,147 @@ func Load() (*Config, error) {
 		MaxInterval:     getEnvAsDuration("MESSAGE_BROKER_RETRY_MAX_INTERVAL", 30*time.Second),
 		Multiplier:      getEnvAsFloat64("MESSAGE_BROKER_RETRY_MULTIPLIER", 2.0),
 		RandomFactor:    getEnvAsFloat64("MESSAGE_BROKER_RETRY_RANDOM_FACTOR", 0.1),
+	}
+
+	// Load Notification configuration
+	config.Notification = NotificationConfig{
+		Enabled:       getEnvAsBool("NOTIFICATION_ENABLED", false),
+		DefaultDriver: getEnv("NOTIFICATION_DEFAULT_DRIVER", "email"),
+		Email: NotificationEmailConfig{
+			Enabled:  getEnvAsBool("NOTIFICATION_EMAIL_ENABLED", false),
+			Provider: getEnv("NOTIFICATION_EMAIL_PROVIDER", "smtp"),
+		},
+		SMS: NotificationSMSConfig{
+			Enabled:  getEnvAsBool("NOTIFICATION_SMS_ENABLED", false),
+			Provider: getEnv("NOTIFICATION_SMS_PROVIDER", "twilio"),
+		},
+		Push: NotificationPushConfig{
+			Enabled:  getEnvAsBool("NOTIFICATION_PUSH_ENABLED", false),
+			Provider: getEnv("NOTIFICATION_PUSH_PROVIDER", "fcm"),
+		},
+		Social: NotificationSocialConfig{
+			Enabled: getEnvAsBool("NOTIFICATION_SOCIAL_ENABLED", false),
+			WhatsApp: NotificationWhatsAppConfig{
+				Enabled:  getEnvAsBool("NOTIFICATION_WHATSAPP_ENABLED", false),
+				Provider: getEnv("NOTIFICATION_WHATSAPP_PROVIDER", "twilio"),
+			},
+			Telegram: NotificationTelegramConfig{
+				Enabled: getEnvAsBool("NOTIFICATION_TELEGRAM_ENABLED", false),
+			},
+			Slack: NotificationSlackConfig{
+				Enabled:  getEnvAsBool("NOTIFICATION_SLACK_ENABLED", false),
+				Provider: getEnv("NOTIFICATION_SLACK_PROVIDER", "webhook"),
+			},
+			Discord: NotificationDiscordConfig{
+				Enabled:  getEnvAsBool("NOTIFICATION_DISCORD_ENABLED", false),
+				Provider: getEnv("NOTIFICATION_DISCORD_PROVIDER", "webhook"),
+			},
+		},
+	}
+
+	// Email provider configurations
+	if config.Notification.Email.Enabled {
+		switch config.Notification.Email.Provider {
+		case "smtp":
+			config.Notification.Email.SMTP = &SMTPConfig{
+				Host:     getEnv("NOTIFICATION_SMTP_HOST", "localhost"),
+				Port:     getEnvAsInt("NOTIFICATION_SMTP_PORT", 587),
+				Username: getEnv("NOTIFICATION_SMTP_USERNAME", ""),
+				Password: getEnv("NOTIFICATION_SMTP_PASSWORD", ""),
+				From:     getEnv("NOTIFICATION_SMTP_FROM", ""),
+				FromName: getEnv("NOTIFICATION_SMTP_FROM_NAME", ""),
+				UseTLS:   getEnvAsBool("NOTIFICATION_SMTP_USE_TLS", false),
+				UseStartTLS: getEnvAsBool("NOTIFICATION_SMTP_USE_STARTTLS", true),
+				InsecureSkip: getEnvAsBool("NOTIFICATION_SMTP_INSECURE_SKIP", false),
+				Timeout:  getEnvAsInt("NOTIFICATION_SMTP_TIMEOUT", 30),
+			}
+		case "sendgrid":
+			config.Notification.Email.SendGrid = &SendGridConfig{
+				APIKey:    getEnv("NOTIFICATION_SENDGRID_API_KEY", ""),
+				FromEmail: getEnv("NOTIFICATION_SENDGRID_FROM_EMAIL", ""),
+				FromName:  getEnv("NOTIFICATION_SENDGRID_FROM_NAME", ""),
+				ReplyTo:   getEnv("NOTIFICATION_SENDGRID_REPLY_TO", ""),
+				Timeout:   getEnvAsInt("NOTIFICATION_SENDGRID_TIMEOUT", 30),
+			}
+		}
+	}
+
+	// SMS provider configurations
+	if config.Notification.SMS.Enabled {
+		switch config.Notification.SMS.Provider {
+		case "twilio":
+			config.Notification.SMS.Twilio = &TwilioConfig{
+				AccountSID:     getEnv("NOTIFICATION_TWILIO_ACCOUNT_SID", ""),
+				AuthToken:      getEnv("NOTIFICATION_TWILIO_AUTH_TOKEN", ""),
+				FromNumber:     getEnv("NOTIFICATION_TWILIO_FROM_NUMBER", ""),
+				StatusCallback: getEnv("NOTIFICATION_TWILIO_STATUS_CALLBACK", ""),
+				Timeout:        getEnvAsInt("NOTIFICATION_TWILIO_TIMEOUT", 30),
+			}
+		case "aws_sns":
+			config.Notification.SMS.AWSSNS = &AWSSNSConfig{
+				Region:    getEnv("NOTIFICATION_AWS_SNS_REGION", "us-east-1"),
+				AccessKey: getEnv("NOTIFICATION_AWS_SNS_ACCESS_KEY", ""),
+				SecretKey: getEnv("NOTIFICATION_AWS_SNS_SECRET_KEY", ""),
+				Timeout:   getEnvAsInt("NOTIFICATION_AWS_SNS_TIMEOUT", 30),
+			}
+		}
+	}
+
+	// Push notification configurations
+	if config.Notification.Push.Enabled {
+		switch config.Notification.Push.Provider {
+		case "fcm":
+			config.Notification.Push.FCM = &FCMConfig{
+				ServerKey: getEnv("NOTIFICATION_FCM_SERVER_KEY", ""),
+				ProjectID: getEnv("NOTIFICATION_FCM_PROJECT_ID", ""),
+				Timeout:   getEnvAsInt("NOTIFICATION_FCM_TIMEOUT", 30),
+			}
+		case "apns":
+			config.Notification.Push.APNS = &APNSConfig{
+				KeyID:      getEnv("NOTIFICATION_APNS_KEY_ID", ""),
+				TeamID:     getEnv("NOTIFICATION_APNS_TEAM_ID", ""),
+				BundleID:   getEnv("NOTIFICATION_APNS_BUNDLE_ID", ""),
+				KeyFile:    getEnv("NOTIFICATION_APNS_KEY_FILE", ""),
+				Production: getEnvAsBool("NOTIFICATION_APNS_PRODUCTION", false),
+				Timeout:    getEnvAsInt("NOTIFICATION_APNS_TIMEOUT", 30),
+			}
+		}
+	}
+
+	// Social media configurations
+	if config.Notification.Social.WhatsApp.Enabled {
+		switch config.Notification.Social.WhatsApp.Provider {
+		case "twilio":
+			config.Notification.Social.WhatsApp.Twilio = &WhatsAppTwilioConfig{
+				AccountSID: getEnv("NOTIFICATION_WHATSAPP_TWILIO_ACCOUNT_SID", ""),
+				AuthToken:  getEnv("NOTIFICATION_WHATSAPP_TWILIO_AUTH_TOKEN", ""),
+				FromNumber: getEnv("NOTIFICATION_WHATSAPP_TWILIO_FROM_NUMBER", ""),
+				Timeout:    getEnvAsInt("NOTIFICATION_WHATSAPP_TWILIO_TIMEOUT", 30),
+			}
+		case "business_api":
+			config.Notification.Social.WhatsApp.BusinessAPI = &WhatsAppBusinessConfig{
+				AccessToken:   getEnv("NOTIFICATION_WHATSAPP_BUSINESS_ACCESS_TOKEN", ""),
+				PhoneNumberID: getEnv("NOTIFICATION_WHATSAPP_BUSINESS_PHONE_NUMBER_ID", ""),
+				Timeout:       getEnvAsInt("NOTIFICATION_WHATSAPP_BUSINESS_TIMEOUT", 30),
+			}
+		}
+	}
+
+	if config.Notification.Social.Telegram.Enabled {
+		config.Notification.Social.Telegram.BotToken = getEnv("NOTIFICATION_TELEGRAM_BOT_TOKEN", "")
+		config.Notification.Social.Telegram.Timeout = getEnvAsInt("NOTIFICATION_TELEGRAM_TIMEOUT", 30)
+	}
+
+	if config.Notification.Social.Slack.Enabled {
+		config.Notification.Social.Slack.WebhookURL = getEnv("NOTIFICATION_SLACK_WEBHOOK_URL", "")
+		config.Notification.Social.Slack.BotToken = getEnv("NOTIFICATION_SLACK_BOT_TOKEN", "")
+		config.Notification.Social.Slack.Timeout = getEnvAsInt("NOTIFICATION_SLACK_TIMEOUT", 30)
+	}
+
+	if config.Notification.Social.Discord.Enabled {
+		config.Notification.Social.Discord.WebhookURL = getEnv("NOTIFICATION_DISCORD_WEBHOOK_URL", "")
+		config.Notification.Social.Discord.BotToken = getEnv("NOTIFICATION_DISCORD_BOT_TOKEN", "")
+		config.Notification.Social.Discord.Timeout = getEnvAsInt("NOTIFICATION_DISCORD_TIMEOUT", 30)
 	}
 
 	// Load Logging configuration

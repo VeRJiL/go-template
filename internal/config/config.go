@@ -205,7 +205,7 @@ type EmailConfig struct {
 	FromAddress string
 	FromName    string
 	SMTP        SMTPConfig
-	SendGrid    SendGridConfig
+	SendGrid    SimpleSendGridConfig
 	Mailgun     MailgunConfig
 	AWSSES      AWSSESConfig
 	TemplateDir string
@@ -219,7 +219,7 @@ type SMTPConfig struct {
 	UseTLS   bool
 }
 
-type SendGridConfig struct {
+type SimpleSendGridConfig struct {
 	APIKey string
 }
 
@@ -301,10 +301,9 @@ type AzureConfig struct {
 }
 
 type ExternalConfig struct {
-	Stripe       StripeConfig
-	Google       GoogleConfig
-	Social       SocialConfig
-	Notification NotificationConfig
+	Stripe StripeConfig
+	Google GoogleConfig
+	Social SocialConfig
 }
 
 type StripeConfig struct {
@@ -329,7 +328,7 @@ type SocialConfig struct {
 	FacebookSecret   string
 }
 
-type NotificationConfig struct {
+type LegacyNotificationConfig struct {
 	FirebaseKey   string
 	PusherAppID   string
 	PusherKey     string
@@ -1130,12 +1129,7 @@ func Load() (*Config, error) {
 				Port:     getEnvAsInt("NOTIFICATION_SMTP_PORT", 587),
 				Username: getEnv("NOTIFICATION_SMTP_USERNAME", ""),
 				Password: getEnv("NOTIFICATION_SMTP_PASSWORD", ""),
-				From:     getEnv("NOTIFICATION_SMTP_FROM", ""),
-				FromName: getEnv("NOTIFICATION_SMTP_FROM_NAME", ""),
 				UseTLS:   getEnvAsBool("NOTIFICATION_SMTP_USE_TLS", false),
-				UseStartTLS: getEnvAsBool("NOTIFICATION_SMTP_USE_STARTTLS", true),
-				InsecureSkip: getEnvAsBool("NOTIFICATION_SMTP_INSECURE_SKIP", false),
-				Timeout:  getEnvAsInt("NOTIFICATION_SMTP_TIMEOUT", 30),
 			}
 		case "sendgrid":
 			config.Notification.Email.SendGrid = &SendGridConfig{

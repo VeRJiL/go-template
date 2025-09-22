@@ -8,14 +8,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Enterprise Architecture**: Complete plugin architecture with automatic dependency injection and module discovery
+- **Code Generation System**: CLI tool for generating complete entities with single command
+- **Module System**: Auto-discovery and registration of modules with zero configuration
+- **Container DI**: Reflection-based dependency injection container with singleton and transient support
+- **Health Monitoring**: Built-in health checks and admin endpoints for module inspection
 - **Comprehensive Test Coverage**: Added extensive test suites across all major packages
 - **Docker & Dependencies**: Enhanced docker-compose configuration with full service stack
 - **Documentation**: Complete README documentation with setup guides and API examples
 - **Notification System**: Laravel-style notification system with multiple drivers and providers
 
 ### Changed
+- **Application Bootstrap**: Migrated from manual dependency injection to enterprise bootstrap system
+- **Route Registration**: Replaced manual route setup with automatic module-based registration
+- **Main Application**: Completely replaced legacy app.go with enterprise architecture
 - **Project Structure**: Cleaned up unnecessary protoc files and simplified Makefile
 - **Docker Configuration**: Consolidated docker-compose files with complete service stack
+
+### Removed
+- **Legacy Architecture**: Removed manual dependency injection system (app.go, routes.go)
+- **Manual Configuration**: Eliminated need for manual changes when adding new entities
+- **Redundant Middleware**: Replaced legacy middleware with built-in implementations
 
 ## Detailed Change Information
 

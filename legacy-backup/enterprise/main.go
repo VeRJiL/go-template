@@ -22,28 +22,8 @@ import (
 	"github.com/VeRJiL/go-template/internal/pkg/logger"
 )
 
-// @title Go Template API
-// @version 1.0
-// @description A Go template application with user management
-// @termsOfService http://swagger.io/terms/
-
-// @contact.name API Support
-// @contact.url http://www.swagger.io/support
-// @contact.email support@swagger.io
-
-// @license.name MIT
-// @license.url https://opensource.org/licenses/MIT
-
-// @host localhost:8080
-// @BasePath /api/v1
-
-// @securityDefinitions.apikey BearerAuth
-// @in header
-// @name Authorization
-// @description Type "Bearer" followed by a space and JWT token.
-
-// EnterpriseApplication represents the enterprise application with automatic module management
-type EnterpriseApplication struct {
+// Application represents the enterprise application
+type Application struct {
 	config     *config.Config
 	logger     *logger.Logger
 	db         *sql.DB
@@ -54,11 +34,9 @@ type EnterpriseApplication struct {
 	bootstrap  *bootstrap.EnterpriseBootstrap
 }
 
-// main is the application entry point using enterprise architecture
+// main is the application entry point
 func main() {
-	fmt.Println("🚀 Starting Go Template Application (Enterprise Architecture)")
-
-	app := &EnterpriseApplication{}
+	app := &Application{}
 
 	// Initialize and run application
 	if err := app.Initialize(); err != nil {
@@ -76,8 +54,8 @@ func main() {
 	app.WaitForShutdown()
 }
 
-// Initialize initializes all application components using enterprise bootstrap
-func (a *EnterpriseApplication) Initialize() error {
+// Initialize initializes all application components
+func (a *Application) Initialize() error {
 	var err error
 
 	// Load configuration
@@ -121,12 +99,12 @@ func (a *EnterpriseApplication) Initialize() error {
 		return fmt.Errorf("failed to initialize router: %w", err)
 	}
 
-	a.logger.Info("Enterprise application initialized successfully")
+	a.logger.Info("Application initialized successfully")
 	return nil
 }
 
 // Start starts the HTTP server
-func (a *EnterpriseApplication) Start() error {
+func (a *Application) Start() error {
 	// Create HTTP server
 	a.server = &http.Server{
 		Addr:         a.config.Server.Host + ":" + a.config.Server.Port,
@@ -154,7 +132,7 @@ func (a *EnterpriseApplication) Start() error {
 }
 
 // WaitForShutdown waits for shutdown signals and gracefully shuts down
-func (a *EnterpriseApplication) WaitForShutdown() {
+func (a *Application) WaitForShutdown() {
 	// Create channel to receive OS signals
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
@@ -177,7 +155,7 @@ func (a *EnterpriseApplication) WaitForShutdown() {
 }
 
 // Shutdown gracefully shuts down the application
-func (a *EnterpriseApplication) Shutdown(ctx context.Context) error {
+func (a *Application) Shutdown(ctx context.Context) error {
 	a.logger.Info("Starting graceful shutdown")
 
 	// Shutdown HTTP server
@@ -216,7 +194,7 @@ func (a *EnterpriseApplication) Shutdown(ctx context.Context) error {
 
 // Helper initialization methods
 
-func (a *EnterpriseApplication) initializeDatabase() error {
+func (a *Application) initializeDatabase() error {
 	var err error
 
 	a.db, err = postgres.NewConnection(&a.config.Database)
@@ -238,7 +216,7 @@ func (a *EnterpriseApplication) initializeDatabase() error {
 	return nil
 }
 
-func (a *EnterpriseApplication) initializeRedis() error {
+func (a *Application) initializeRedis() error {
 	// For now, always try to connect to Redis if config exists
 	var err error
 	a.redis, err = redisDB.NewConnection(&a.config.Redis)
@@ -266,7 +244,7 @@ func (a *EnterpriseApplication) initializeRedis() error {
 	return nil
 }
 
-func (a *EnterpriseApplication) initializeJWTService() error {
+func (a *Application) initializeJWTService() error {
 	a.jwtService = auth.NewJWTService(
 		a.config.Auth.JWT.Secret,
 		int(a.config.Auth.JWT.Expiration.Seconds()),
@@ -279,7 +257,7 @@ func (a *EnterpriseApplication) initializeJWTService() error {
 	return nil
 }
 
-func (a *EnterpriseApplication) initializeEnterprise() error {
+func (a *Application) initializeEnterprise() error {
 	// Create enterprise bootstrap
 	a.bootstrap = bootstrap.NewEnterpriseBootstrap(a.config, a.logger)
 
@@ -291,8 +269,8 @@ func (a *EnterpriseApplication) initializeEnterprise() error {
 		return err
 	}
 
-	// Register all available modules automatically
-	if err := a.registerAllModules(); err != nil {
+	// Register core modules
+	if err := a.registerCoreModules(); err != nil {
 		return err
 	}
 
@@ -305,8 +283,8 @@ func (a *EnterpriseApplication) initializeEnterprise() error {
 	return nil
 }
 
-func (a *EnterpriseApplication) registerAllModules() error {
-	// Register user module (existing functionality)
+func (a *Application) registerCoreModules() error {
+	// Register user module
 	userModule := modules.NewUserModule()
 	if err := a.bootstrap.RegisterModule(userModule); err != nil {
 		return fmt.Errorf("failed to register user module: %w", err)
@@ -318,14 +296,10 @@ func (a *EnterpriseApplication) registerAllModules() error {
 		return fmt.Errorf("failed to register product module: %w", err)
 	}
 
-	a.logger.Info("All modules registered successfully",
-		"user_module", "enabled",
-		"product_module", "enabled")
-
 	return nil
 }
 
-func (a *EnterpriseApplication) initializeRouter() error {
+func (a *Application) initializeRouter() error {
 	// Set Gin mode
 	if a.config.Server.Mode == "release" {
 		gin.SetMode(gin.ReleaseMode)
@@ -340,7 +314,7 @@ func (a *EnterpriseApplication) initializeRouter() error {
 	// Create API group
 	apiGroup := a.router.Group("/api/v1")
 
-	// Register enterprise routes (all modules automatically)
+	// Register enterprise routes
 	if err := a.bootstrap.RegisterRoutes(apiGroup); err != nil {
 		return err
 	}
@@ -355,7 +329,7 @@ func (a *EnterpriseApplication) initializeRouter() error {
 	return nil
 }
 
-func (a *EnterpriseApplication) addGlobalMiddleware() {
+func (a *Application) addGlobalMiddleware() {
 	// Recovery middleware
 	a.router.Use(gin.Recovery())
 
@@ -378,7 +352,7 @@ func (a *EnterpriseApplication) addGlobalMiddleware() {
 	})
 }
 
-func (a *EnterpriseApplication) addHealthCheckRoutes() {
+func (a *Application) addHealthCheckRoutes() {
 	// Health check endpoint
 	a.router.GET("/health", func(c *gin.Context) {
 		health := a.bootstrap.HealthCheck(c.Request.Context())
@@ -402,7 +376,7 @@ func (a *EnterpriseApplication) addHealthCheckRoutes() {
 	})
 }
 
-func (a *EnterpriseApplication) addAdminRoutes() {
+func (a *Application) addAdminRoutes() {
 	adminGroup := a.router.Group("/admin")
 
 	// Application stats

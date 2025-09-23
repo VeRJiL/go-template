@@ -54,6 +54,7 @@ func SetupRoutes(router *gin.Engine, deps *Dependencies) {
 		users := v1.Group("/users").Use(middleware.AuthMiddleware(deps.JWTService))
 		{
 			users.GET("/", deps.UserHandler.List)         // List all users
+			users.GET("/search", deps.UserHandler.Search) // Search users
 			users.GET("/:id", deps.UserHandler.GetByID)   // Get user by ID
 			users.PUT("/:id", deps.UserHandler.Update)    // Update user
 			users.DELETE("/:id", deps.UserHandler.Delete) // Delete user

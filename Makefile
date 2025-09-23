@@ -75,6 +75,45 @@ test-migration-short: ## Run migration tests in short mode
 	cd tests/migration && go test -short -v
 	@echo "$(GREEN)✅ Migration tests completed$(NC)"
 
+##@ End-to-End Testing
+test-e2e: ## Run complete end-to-end tests with infrastructure
+	@echo "$(BLUE)Running end-to-end tests with infrastructure setup...$(NC)"
+	./scripts/test-e2e.sh -v
+	@echo "$(GREEN)✅ End-to-end tests completed$(NC)"
+
+test-e2e-coverage: ## Run e2e tests with coverage
+	@echo "$(BLUE)Running end-to-end tests with coverage...$(NC)"
+	./scripts/test-e2e.sh -v --coverage
+	@echo "$(GREEN)✅ End-to-end tests with coverage completed$(NC)"
+
+test-e2e-only: ## Run e2e tests without infrastructure setup
+	@echo "$(BLUE)Running end-to-end tests (no setup)...$(NC)"
+	./scripts/test-e2e.sh --no-setup -v
+	@echo "$(GREEN)✅ End-to-end tests completed$(NC)"
+
+test-e2e-up: ## Start e2e test infrastructure only
+	@echo "$(BLUE)Starting end-to-end test infrastructure...$(NC)"
+	./scripts/test-e2e.sh -s
+	@echo "$(GREEN)✅ E2E test infrastructure started$(NC)"
+
+test-e2e-down: ## Stop e2e test infrastructure
+	@echo "$(BLUE)Stopping end-to-end test infrastructure...$(NC)"
+	./scripts/test-e2e.sh -c
+	@echo "$(GREEN)✅ E2E test infrastructure stopped$(NC)"
+
+test-e2e-integration: ## Run full integration tests only
+	@echo "$(BLUE)Running full integration tests...$(NC)"
+	./scripts/test-e2e.sh -t TestFullIntegration -v
+	@echo "$(GREEN)✅ Integration tests completed$(NC)"
+
+test-e2e-migration: ## Run database migration tests only
+	@echo "$(BLUE)Running database migration tests...$(NC)"
+	./scripts/test-e2e.sh -t TestDatabaseMigrations -v
+	@echo "$(GREEN)✅ Database migration tests completed$(NC)"
+
+test-all: test test-e2e ## Run all tests (unit + e2e)
+	@echo "$(GREEN)✅ All tests completed successfully$(NC)"
+
 ##@ Code Quality
 fmt: ## Format code
 	@echo "$(BLUE)Formatting code...$(NC)"

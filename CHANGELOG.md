@@ -8,27 +8,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Enterprise Architecture**: Complete plugin architecture with automatic dependency injection and module discovery
-- **Code Generation System**: CLI tool for generating complete entities with single command
-- **Module System**: Auto-discovery and registration of modules with zero configuration
-- **Container DI**: Reflection-based dependency injection container with singleton and transient support
-- **Health Monitoring**: Built-in health checks and admin endpoints for module inspection
+- **Clean Architecture**: Proper separation of concerns with cmd/main.go (entry point) and internal/app/app.go (business logic)
+- **Enterprise Flexibility**: Manual dependency injection pattern for full developer control
+- **Editable Code Generation**: Code generator creates fully customizable scaffolding (no "DO NOT EDIT" restrictions)
 - **Comprehensive Test Coverage**: Added extensive test suites across all major packages
 - **Docker & Dependencies**: Enhanced docker-compose configuration with full service stack
 - **Documentation**: Complete README documentation with setup guides and API examples
 - **Notification System**: Laravel-style notification system with multiple drivers and providers
 
 ### Changed
-- **Application Bootstrap**: Migrated from manual dependency injection to enterprise bootstrap system
-- **Route Registration**: Replaced manual route setup with automatic module-based registration
-- **Main Application**: Completely replaced legacy app.go with enterprise architecture
-- **Project Structure**: Cleaned up unnecessary protoc files and simplified Makefile
+- **Main Application**: Restored working application from stable commit with clean architecture
+- **Code Generation Templates**: Modified all templates to generate editable scaffolding instead of restricted code
+- **Project Structure**: Cleaned up cmd folder to include only essential components (main.go + generator)
+- **Dependency Injection**: Reverted to explicit manual DI for enterprise predictability and transparency
 - **Docker Configuration**: Consolidated docker-compose files with complete service stack
 
 ### Removed
-- **Legacy Architecture**: Removed manual dependency injection system (app.go, routes.go)
-- **Manual Configuration**: Eliminated need for manual changes when adding new entities
-- **Redundant Middleware**: Replaced legacy middleware with built-in implementations
+- **Enterprise Auto-DI**: Removed complex auto-registration system in favor of explicit manual control
+- **Redundant CMD Folders**: Cleaned up unnecessary cmd subdirectories and test folders
+- **Code Restrictions**: Eliminated "DO NOT EDIT" limitations from generated files
+
+### Architecture Benefits
+- **Single Responsibility Principle**: Clean separation between entry point and application logic
+- **Full Developer Control**: No hidden magic or auto-registration complexity
+- **Enterprise-Ready**: Predictable manual DI pattern suitable for complex business logic
+- **Maintainable**: Clear, explicit dependencies that are easy to test and debug
+- **Flexible**: All generated code is fully editable for custom requirements
 
 ## Detailed Change Information
 

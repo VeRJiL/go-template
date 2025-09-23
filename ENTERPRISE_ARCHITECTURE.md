@@ -121,17 +121,18 @@ go run cmd/main-enterprise.go    # Enterprise
 go run cmd/main.go               # Legacy
 ```
 
-### Option 2: Migrate with Script
+### Option 2: Direct Migration
 ```bash
-./scripts/migrate-to-enterprise.sh
+# Enterprise architecture is now the default
+go run cmd/main.go  # Uses enterprise architecture
 ```
 
-The migration script:
-1. Creates backups of legacy files
-2. Replaces main.go with enterprise version
-3. Updates documentation
-4. Tests the new setup
-5. Provides rollback capability
+Manual migration steps:
+1. Compare current main.go with enterprise features
+2. Update configuration as needed
+3. Test with `go run cmd/main.go`
+4. Generate new entities with generator
+5. Use git for rollback capability
 
 ### Option 3: Manual Migration
 1. Copy `cmd/main-enterprise.go` to `cmd/main.go`
@@ -303,7 +304,7 @@ func (s *orderService) CreateOrderWithProducts(ctx context.Context, order *entit
 ## Migration Checklist
 
 - [ ] Test enterprise application compiles: `go build cmd/main-enterprise.go`
-- [ ] Run migration script: `./scripts/migrate-to-enterprise.sh`
+- [ ] Run enterprise application: `go run cmd/main.go`
 - [ ] Test all existing APIs work the same
 - [ ] Generate a test entity: `go run cmd/generator/main.go -name=Test`
 - [ ] Verify new entity APIs work: `curl http://localhost:8080/api/v1/tests`
